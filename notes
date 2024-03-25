@@ -1,0 +1,140 @@
+Модель контакта (Contact.kt):
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "contacts")
+data class Contact(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val phoneNumber: String
+)
+
+Модель заметки (Note.kt):
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "notes")
+data class Note(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val contactId: Long,
+    val text: String
+)
+
+ContactDao.kt:
+
+import androidx.room.*
+
+@Dao
+interface ContactDao {
+    @Query("SELECT * FROM contacts")
+    fun getAllContacts(): List<Contact>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertContact(contact: Contact)
+
+    @Update
+    fun updateContact(contact: Contact)
+
+    @Delete
+    fun deleteContact(contact: Contact)
+}
+
+@Dao
+interface NoteDao {
+    @Query("SELECT * FROM notes WHERE contactId = :contactId")
+    fun getNotesForContact(contactId: Long): List<Note>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertNote(note: Note)
+
+    @Update
+    fun updateNote(note: Note)
+
+    @Delete
+    fun deleteNote(note: Note)
+}
+
+AppDatabase.kt:
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+
+@Database(entities = [Contact::class, Note::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun contactDao(): ContactDao
+    abstract fun noteDao(): NoteDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "app_database"
+                ).build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
+}
+
+ContactsProvider.kt:
+
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.database.Cursor
+import android.net.Uri
+
+class ContactsProvider : ContentProvider() {
+    override fun onCreate(): Boolean {
+        // Инициализация провайдера
+    }
+
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?
+    ): Cursor? {
+        // Запрос к контактам и возврат курсора с результатом
+    }
+
+    override fun getType(uri: Uri): String? {
+        // Определение MIME-типа данных
+    }
+
+    override fun insert(uri: Uri, values: ContentValues?): Uri? {
+        // Вставка данных (не реализовано)
+    }
+
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
+        // Удаление данных (не реализовано)
+    }
+
+    override fun update(
+        uri: Uri,
+        values: ContentValues?,
+        selection: String?,
+        selectionArgs: Array<out String>?
+    ): Int {
+        // Обновление данных (не реализовано)
+    }
+}
+
+AndroidManifest.xml:
+
+<provider
+    android:name=".ContactsProvider"
+    android:authorities="com.example.contacts.provider"
+    android:exported="false" />
